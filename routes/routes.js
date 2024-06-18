@@ -3,7 +3,8 @@ const router = express.Router();
 const File = require('../models/file')
 const upload = require('../utils/multer');
 const User = require('../models/users');
-const jwt = require('jsonwebtoken')
+const jwt = require('jsonwebtoken');
+const fs = require('fs')
 
 
 router.get('/', (req, res) => {
@@ -59,7 +60,7 @@ router.post('/api/login', async (req, res) => {
 
 
 //File upload api
-router.post('api/upload', upload.single('file'), async (req, res) => {
+router.post('/api/upload', upload.single('file'), async (req, res) => {
     try {
         if (!req.file) {
             res.status(400).json({ msg: "No file uploaded" })
@@ -69,10 +70,11 @@ router.post('api/upload', upload.single('file'), async (req, res) => {
             filename: req.file.originalname,
             contentType: req.file.mimetype,
             size: req.file.size,
-            data: req.file.buffer,
+            data: fs.readFileSync(req.file.path),
         });
         const result = await newFile.save();
         if (result) {
+            fs.unlinkSync(req.file.path);
             res.status(200).json({ msg: "File uploaded successfully" })
         }
     } catch (error) {
@@ -82,11 +84,11 @@ router.post('api/upload', upload.single('file'), async (req, res) => {
 })
 
 // get file api
-router.get('api/getfile', async (req, res) => {
+router.get('/api/getfile', async (req, res) => {
     try {
-        const file = await File.find();
-        if (file.length > 0) {
-            res.status(200).send(file);
+        const files = await File.find();
+        if (files.length > 0) {
+            res.status(200).json(files);
         }
         else {
             res.status(400).send("No file found")
